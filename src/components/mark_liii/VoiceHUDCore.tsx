@@ -174,8 +174,20 @@ export const VoiceHUDCore: React.FC<VoiceHUDCoreProps> = ({
       });
       const data = await res.json();
       if (data.audioBase64) {
-        const audio = new Audio(`data:audio/mp3;base64,${data.audioBase64}`);
-        audio.play();
+        try {
+          const audio = new Audio(`data:audio/mp3;base64,${data.audioBase64}`);
+          await audio.play().catch(() => {
+            if ("speechSynthesis" in window) {
+              const utter = new SpeechSynthesisUtterance(promptText);
+              window.speechSynthesis.speak(utter);
+            }
+          });
+        } catch {
+          if ("speechSynthesis" in window) {
+            const utter = new SpeechSynthesisUtterance(promptText);
+            window.speechSynthesis.speak(utter);
+          }
+        }
       } else {
         // Fallback Web Speech
         if ("speechSynthesis" in window) {

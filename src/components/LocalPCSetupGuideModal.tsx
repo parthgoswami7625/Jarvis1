@@ -14,6 +14,8 @@ import {
   Laptop,
   Bluetooth,
   Headphones,
+  Cloud,
+  Globe,
 } from "lucide-react";
 
 interface LocalPCSetupGuideModalProps {
@@ -25,7 +27,7 @@ export const LocalPCSetupGuideModal: React.FC<LocalPCSetupGuideModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  const [activeTab, setActiveTab] = useState<"quick" | "voice" | "agents" | "env" | "bluetooth">("quick");
+  const [activeTab, setActiveTab] = useState<"quick" | "voice" | "agents" | "env" | "bluetooth" | "cloud">("quick");
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   if (!isOpen) return null;
@@ -36,30 +38,49 @@ export const LocalPCSetupGuideModal: React.FC<LocalPCSetupGuideModalProps> = ({
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
-  const quickStartScript = `# 1. Clone the repository
-git clone https://github.com/your-username/parths-autonomous-business-agent.git
-cd parths-autonomous-business-agent
+  const quickStartScript = `# Since your Git repository is already connected, open your terminal inside this folder:
 
-# 2. Install dependencies & configure API key
+# 1. Install Node.js dependencies
 npm install
-cp .env.example .env
-# Open .env and insert your free GEMINI_API_KEY from Google AI Studio
 
-# 3. Start the Unified Web Engine (HUD + Express Server)
+# 2. Configure your free Gemini API Key
+# Windows PowerShell:
+Copy-Item .env.example .env
+# macOS / Linux:
+# cp .env.example .env
+
+# Open .env and insert your free GEMINI_API_KEY from:
+# https://aistudio.google.com/app/apikey
+
+# 3. Start the Web Dashboard + Backend Server
 npm run dev
 # Dashboard is live at http://localhost:3000`;
 
   const markLIIIScript = `# 1. Create a Python 3.12 virtual environment
-python3 -m venv venv
-source venv/bin/activate  # On Windows: .\\venv\\Scripts\\activate
+# Windows PowerShell:
+# (If script execution is blocked, run: Set-ExecutionPolicy RemoteSigned -Scope CurrentUser)
+python -m venv venv
+.\venv\Scripts\Activate.ps1
 
-# 2. Install local audio, wake-word, and PC control packages
+# macOS / Linux:
+# python3 -m venv venv
+# source venv/bin/activate
+
+# 2. Install audio, wake-word, and PC control packages
 pip install vosk sounddevice numpy pyautogui pyttsx3 google-genai python-dotenv
 
-# 3. Download lightweight offline Vosk wake-word model (50MB)
-mkdir -p model
+# 3. Download the offline Vosk wake-word model (50MB)
+# Direct Link: https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip
+# Windows PowerShell:
+mkdir model -ErrorAction SilentlyContinue
 curl -L https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip -o model.zip
-unzip model.zip && mv vosk-model-small-en-us-0.15 model/vosk && rm model.zip
+tar -xf model.zip
+Move-Item -Path "vosk-model-small-en-us-0.15" -Destination "model\vosk" -Force
+Remove-Item model.zip
+
+# macOS / Linux:
+# mkdir -p model && curl -L https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip -o model.zip
+# unzip model.zip && mv vosk-model-small-en-us-0.15 model/vosk && rm model.zip
 
 # 4. Launch the Mark-LIII Voice Daemon
 python mark_liii_daemon.py`;
@@ -87,6 +108,23 @@ pactl load-module module-switch-on-connect
 # macOS (optional helper to switch audio source via CLI):
 # brew install switchaudio-osx
 # SwitchAudioSource -s "AirPods Pro"`;
+
+  const cloudDeployScript = `# Option 1: Docker (Any Cloud VPS, AWS EC2, DigitalOcean, Fly.io, Railway)
+# 1. Build the production container
+docker build -t parths-agent .
+
+# 2. Run the container on port 3000
+docker run -d -p 3000:3000 -e GEMINI_API_KEY="your_api_key_here" --name parth-agent parths-agent
+
+# Option 2: Render.com / Railway / Fly.io (From Git)
+# Build Command: npm install && npm run build
+# Start Command: npm start
+# Environment Variables:
+#   GEMINI_API_KEY = your_gemini_api_key
+#   PORT = 3000
+
+# Option 3: Google Cloud Run CLI
+gcloud run deploy parths-agent --source . --port 3000 --set-env-vars GEMINI_API_KEY="your_key" --allow-unauthenticated`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
@@ -164,6 +202,17 @@ pactl load-module module-switch-on-connect
           >
             <Bluetooth className="w-3.5 h-3.5" />
             <span>5. Bluetooth Mic &amp; Audio</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("cloud")}
+            className={`px-4 py-2.5 font-bold border-b-2 transition flex items-center space-x-1.5 ${
+              activeTab === "cloud"
+                ? "border-emerald-400 text-emerald-300 bg-emerald-950/20"
+                : "border-transparent text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            <Cloud className="w-3.5 h-3.5" />
+            <span>6. Cloud Hosting</span>
           </button>
         </div>
 
@@ -351,6 +400,68 @@ pactl load-module module-switch-on-connect
                 </div>
                 <pre className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-blue-200 text-[11px] overflow-x-auto leading-relaxed">
                   {bluetoothAutoScript}
+                </pre>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "cloud" && (
+            <div className="space-y-4">
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800">
+                <div className="font-bold text-emerald-400 mb-1 flex items-center gap-1.5">
+                  <Globe className="w-4 h-4 text-emerald-400" />
+                  <span>Cloud Deployment Overview:</span>
+                </div>
+                <p className="text-slate-400 text-[11px] leading-relaxed">
+                  Your application is containerized with a production multi-stage <strong>Dockerfile</strong> and <strong>docker-compose.yml</strong>. You can host it on any cloud provider (Google Cloud Run, Render, Railway, Fly.io, or AWS). In cloud mode, the Web HUD retains full microphone voice recognition and audio speech synthesis directly in any browser!
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5">
+                  <div className="font-bold text-emerald-300 text-xs flex items-center justify-between">
+                    <span>1. Google Cloud Run</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">Instant</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Click <strong>&quot;Deploy to Cloud Run&quot;</strong> in Google AI Studio top navigation bar, or use the <code>gcloud run deploy</code> CLI command. Auto-scales to zero when idle.
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5">
+                  <div className="font-bold text-cyan-300 text-xs flex items-center justify-between">
+                    <span>2. Render / Railway</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800">Git Linked</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Connect your GitHub repo on <a href="https://render.com" target="_blank" rel="noreferrer" className="text-cyan-400 underline">Render.com</a> or <a href="https://railway.app" target="_blank" rel="noreferrer" className="text-cyan-400 underline">Railway.app</a>. Set build command to <code>npm run build</code> and start to <code>npm start</code>.
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5">
+                  <div className="font-bold text-blue-300 text-xs flex items-center justify-between">
+                    <span>3. Docker Container</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-950 text-blue-400 border border-blue-800">Portable</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Build and run the Docker image anywhere: DigitalOcean droplet, AWS EC2, or your private server using <code>docker compose up -d</code>.
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-slate-300 font-bold">Cloud Deployment Commands:</span>
+                  <button
+                    onClick={() => copyToClipboard(cloudDeployScript, "cloud")}
+                    className="flex items-center space-x-1 text-emerald-400 hover:text-emerald-300"
+                  >
+                    {copiedCode === "cloud" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedCode === "cloud" ? "Copied" : "Copy commands"}</span>
+                  </button>
+                </div>
+                <pre className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-emerald-200 text-[11px] overflow-x-auto leading-relaxed">
+                  {cloudDeployScript}
                 </pre>
               </div>
             </div>
