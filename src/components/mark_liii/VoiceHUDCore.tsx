@@ -9,6 +9,8 @@ import {
   Radio,
   Clock,
   Terminal,
+  ExternalLink,
+  AlertCircle,
 } from "lucide-react";
 import { HUDTheme, MarkLIIIVoice, VoiceState } from "../../types";
 
@@ -38,7 +40,9 @@ export const VoiceHUDCore: React.FC<VoiceHUDCoreProps> = ({
   const [inputText, setInputText] = useState("");
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [audioLevel, setAudioLevel] = useState(25);
+  const [micNotice, setMicNotice] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const isInsideIframe = typeof window !== "undefined" && window.self !== window.top;
 
   // Animated visualizer loop
   useEffect(() => {
@@ -112,31 +116,44 @@ export const VoiceHUDCore: React.FC<VoiceHUDCoreProps> = ({
         recognition.continuous = false;
         recognition.interimResults = true;
         recognition.lang = "en-US";
+        let capturedTranscript = "";
 
         recognition.onstart = () => {
           setVoiceState("listening");
+          setTranscript("Listening for command...");
+          setMicNotice(null);
         };
 
         recognition.onresult = (event: any) => {
           const current = event.resultIndex;
           const text = event.results[current][0].transcript;
+          capturedTranscript = text;
           setTranscript(text);
         };
 
         recognition.onend = () => {
-          if (transcript.trim()) {
-            onExecuteCommand(transcript);
+          if (capturedTranscript.trim()) {
+            onExecuteCommand(capturedTranscript.trim());
           } else {
             setVoiceState("idle");
           }
         };
 
-        recognition.onerror = () => {
+        recognition.onerror = (event: any) => {
           setVoiceState("idle");
+          if (event?.error === "not-allowed" || event?.error === "service-not-allowed") {
+            setMicNotice(
+              isInsideIframe
+                ? "Microphone access is restricted inside preview iframes. Open app in a new tab (top right icon) for live mic access."
+                : "Microphone permission was denied. Please allow microphone access in your browser address bar."
+            );
+          } else if (event?.error !== "no-speech") {
+            setMicNotice(`Speech recognition notice: ${event?.error || "Ended"}. You can also type commands or click directives below.`);
+          }
         };
 
         recognition.start();
-      } catch {
+      } catch (err) {
         simulateVoiceWake();
       }
     } else {
@@ -304,6 +321,38 @@ export const VoiceHUDCore: React.FC<VoiceHUDCoreProps> = ({
             className="w-full h-12 rounded-lg bg-slate-950/60 border border-slate-800/80"
           />
         </div>
+
+        {/* Microphone Notice / Fallback Banner */}
+        {micNotice && (
+          <div className="w-full max-w-lg mt-3 p-2.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-200 text-[11px] font-mono flex items-start gap-2 text-left">
+            <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p>{micNotice}</p>
+              <div className="mt-1 flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setMicNotice(null);
+                    simulateVoiceWake();
+                  }}
+                  className="px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[10px]"
+                >
+                  Run Demo Directive
+                </button>
+                {isInsideIframe && (
+                  <a
+                    href={window.location.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-[10px]"
+                  >
+                    <span>Open in Full Tab</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Status Indicator text */}
         <div className="mt-3 flex items-center space-x-2 font-mono text-xs">

@@ -1,0 +1,21 @@
+{
+  "id": "/",
+  "name": "Parth's Autonomous Business Agent",
+  "short_name": "Parth Agent",
+  "description": "World-class multi-specialist AI agent system unifying Mark-LIII voice-controlled desktop JARVIS, 300+ Agency Agents, and 11 LinkedIn marketing automation skills.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#020617",
+  "background_color": "#020617",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -220,9 +220,18 @@ export const BluetoothAudioRoutingManager: React.FC<BluetoothAudioRoutingManager
           setStatusNotice("Microphone test verified successfully.");
         }
       }, 100);
-    } catch (err) {
+    } catch (err: any) {
       setIsTestingMic(false);
-      setStatusNotice("Microphone test error. Please check browser microphone permissions.");
+      const isIframe = typeof window !== "undefined" && window.self !== window.top;
+      if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
+        setStatusNotice(
+          isIframe
+            ? "Microphone access blocked inside preview iframe. Please open the app in a new tab (top right ↗ icon) to enable mic."
+            : "Microphone permission denied. Please allow microphone access in your browser address bar."
+        );
+      } else {
+        setStatusNotice(`Microphone test note: ${err?.message || "Unavailable"}. You can use the quick directives or text commands.`);
+      }
     }
   };
 
