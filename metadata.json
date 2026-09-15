@@ -1,0 +1,6 @@
+{
+  "name": "Parth's Autonomous Business Agent",
+  "description": "World-class multi-specialist AI agent system unifying Mark-LIII voice-controlled desktop JARVIS, 300+ Agency Agents, and 11 LinkedIn marketing automation skills.",
+  "requestFramePermissions": ["microphone", "camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
